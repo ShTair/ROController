@@ -6,24 +6,30 @@ namespace ShComp
 {
     public static partial class Mouse
     {
+        public static bool Hooked { get; set; }
         private static IntPtr _hHook;
 
-        public static void SetHook()
+        public static void Hook()
         {
             var module = GetModuleHandle(Process.GetCurrentProcess().MainModule.ModuleName);
-
             _hHook = SetWindowsHookEx(HookType.WH_MOUSE_LL, OnHookProc, module, IntPtr.Zero);
         }
 
         public static void Unhook()
         {
-            UnhookWindowsHookEx(_hHook);
+            if (Hooked)
+            {
+                UnhookWindowsHookEx(_hHook);
+                Hooked = false;
+            }
         }
 
         private static IntPtr OnHookProc(int nCode, IntPtr wParam, IntPtr lParam)
         {
             try
-            { }
+            {
+                Console.WriteLine();
+            }
             catch { }
 
             return CallNextHookEx(_hHook, nCode, wParam, lParam);
@@ -33,15 +39,15 @@ namespace ShComp
         private static extern IntPtr GetModuleHandle(string moduleName);
 
         [DllImport("user32.dll")]
-        public static extern IntPtr SetWindowsHookEx(HookType idHook, HOOKPROC lpfn, IntPtr hMod, IntPtr dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(HookType idHook, HOOKPROC lpfn, IntPtr hMod, IntPtr dwThreadId);
 
         [DllImport("user32.dll")]
-        public static extern bool UnhookWindowsHookEx(IntPtr hHook);
+        private static extern bool UnhookWindowsHookEx(IntPtr hHook);
 
-        public const int HC_ACTION = 0;
-        public delegate IntPtr HOOKPROC(int nCode, IntPtr wParam, IntPtr lParam);
+        private const int HC_ACTION = 0;
+        private delegate IntPtr HOOKPROC(int nCode, IntPtr wParam, IntPtr lParam);
 
-        public enum HookType : int
+        private enum HookType : int
         {
             WH_MSGFILTER = -1,
             WH_JOURNALRECORD = 0,
@@ -62,6 +68,6 @@ namespace ShComp
         }
 
         [DllImport("user32.dll")]
-        public static extern IntPtr CallNextHookEx(IntPtr hHook, int nCode, IntPtr wParam, IntPtr lParam);
+        private static extern IntPtr CallNextHookEx(IntPtr hHook, int nCode, IntPtr wParam, IntPtr lParam);
     }
 }
