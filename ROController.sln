@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ROController", "ROController\ROController.csproj", "{E90439FF-6BA9-47E4-AC4F-55A453C2F74E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShComp", "ShComp\ShComp.csproj", "{26DDCB16-4E13-4507-A170-7BD96EC0DB1B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E90439FF-6BA9-47E4-AC4F-55A453C2F74E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E90439FF-6BA9-47E4-AC4F-55A453C2F74E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E90439FF-6BA9-47E4-AC4F-55A453C2F74E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E90439FF-6BA9-47E4-AC4F-55A453C2F74E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26DDCB16-4E13-4507-A170-7BD96EC0DB1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26DDCB16-4E13-4507-A170-7BD96EC0DB1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26DDCB16-4E13-4507-A170-7BD96EC0DB1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26DDCB16-4E13-4507-A170-7BD96EC0DB1B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {684F7B0C-A1D8-4ED1-9AE5-934CB114482C}
+	EndGlobalSection
+EndGlobal
