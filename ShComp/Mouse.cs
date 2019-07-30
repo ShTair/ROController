@@ -2,7 +2,7 @@
 
 namespace ShComp
 {
-    public static class Mouse
+    public static partial class Mouse
     {
         public static void Move(int x, int y)
         {

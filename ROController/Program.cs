@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ShComp;
+using System;
 using System.Threading.Tasks;
 
 namespace ROController
@@ -12,6 +13,8 @@ namespace ROController
         }
 
         private static async Task RunAsync()
-        { }
+        {
+            Mouse.SetHook();
+        }
     }
 }
