@@ -39,42 +39,95 @@ namespace ROController
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public extern static bool EnumWindows(EnumWindowsDelegate lpEnumFunc, IntPtr lparam);
+        static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
-        public delegate bool EnumWindowsDelegate(IntPtr hWnd, IntPtr lparam);
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
-        private static bool OnEnumWindows(IntPtr hWnd, IntPtr lparam)
+        private static bool OnEnumWindows(IntPtr hWnd, IntPtr lParam)
         {
             int textLen = GetWindowTextLength(hWnd);
             if (0 < textLen)
             {
-                //ウィンドウのタイトルを取得する
-                StringBuilder tsb = new StringBuilder(textLen + 1);
-                GetWindowText(hWnd, tsb, tsb.Capacity);
-
                 //ウィンドウのクラス名を取得する
                 StringBuilder csb = new StringBuilder(256);
                 GetClassName(hWnd, csb, csb.Capacity);
 
+                var cs = csb.ToString();
+                if (cs.IndexOf("BlueStacks.exe") == -1) return true;
+
+                //ウィンドウのタイトルを取得する
+                StringBuilder tsb = new StringBuilder(textLen + 1);
+                GetWindowText(hWnd, tsb, tsb.Capacity);
+
                 //結果を表示する
                 Console.WriteLine("クラス名:" + csb.ToString());
                 Console.WriteLine("タイトル:" + tsb.ToString());
+
+                RECT rect;
+                GetWindowRect(hWnd, out rect);
+
+                Console.WriteLine(rect);
+
+                Console.WriteLine();
             }
 
             //すべてのウィンドウを列挙する
             return true;
-
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int GetWindowText(IntPtr hWnd,
-      StringBuilder lpString, int nMaxCount);
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowTextLength(IntPtr hWnd);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int GetClassName(IntPtr hWnd,
-            StringBuilder lpClassName, int nMaxCount);
+        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+
+        public RECT(int left, int top, int right, int bottom)
+        {
+            Left = left;
+            Top = top;
+            Right = right;
+            Bottom = bottom;
+        }
+
+        public int X
+        {
+            get { return Left; }
+            set { Right -= (Left - value); Left = value; }
+        }
+
+        public int Y
+        {
+            get { return Top; }
+            set { Bottom -= (Top - value); Top = value; }
+        }
+
+        public int Height
+        {
+            get { return Bottom - Top; }
+            set { Bottom = value + Top; }
+        }
+
+        public int Width
+        {
+            get { return Right - Left; }
+            set { Right = value + Left; }
+        }
+
+        public override string ToString()
+        {
+            return string.Format(System.Globalization.CultureInfo.CurrentCulture, "{{X={0},Y={1},W={2},H={3}}}", Left, Top, Right - Left, Bottom - Top);
+        }
     }
 }
