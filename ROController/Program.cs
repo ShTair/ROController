@@ -45,31 +45,28 @@ namespace ROController
 
         private static bool OnEnumWindows(IntPtr hWnd, IntPtr lParam)
         {
+            //ウィンドウのクラス名を取得する
+            StringBuilder csb = new StringBuilder(256);
+            GetClassName(hWnd, csb, csb.Capacity);
+
+            var cs = csb.ToString();
+            if (cs.IndexOf("BlueStacks.exe") == -1) return true;
+
+            //ウィンドウのタイトルを取得する
             int textLen = GetWindowTextLength(hWnd);
-            if (0 < textLen)
-            {
-                //ウィンドウのクラス名を取得する
-                StringBuilder csb = new StringBuilder(256);
-                GetClassName(hWnd, csb, csb.Capacity);
+            StringBuilder tsb = new StringBuilder(textLen + 1);
+            GetWindowText(hWnd, tsb, tsb.Capacity);
 
-                var cs = csb.ToString();
-                if (cs.IndexOf("BlueStacks.exe") == -1) return true;
+            //結果を表示する
+            Console.WriteLine("クラス名:" + csb.ToString());
+            Console.WriteLine("タイトル:" + tsb.ToString());
 
-                //ウィンドウのタイトルを取得する
-                StringBuilder tsb = new StringBuilder(textLen + 1);
-                GetWindowText(hWnd, tsb, tsb.Capacity);
+            RECT rect;
+            GetWindowRect(hWnd, out rect);
 
-                //結果を表示する
-                Console.WriteLine("クラス名:" + csb.ToString());
-                Console.WriteLine("タイトル:" + tsb.ToString());
+            Console.WriteLine(rect);
 
-                RECT rect;
-                GetWindowRect(hWnd, out rect);
-
-                Console.WriteLine(rect);
-
-                Console.WriteLine();
-            }
+            Console.WriteLine();
 
             //すべてのウィンドウを列挙する
             return true;
