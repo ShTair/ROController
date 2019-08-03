@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace ROController
 {
@@ -28,13 +29,18 @@ namespace ROController
 
             Mouse.Unhook();
 
-            Task.Delay(2000).Wait();
+            Task.Delay(100).Wait();
             return false;
         }
 
         private static async Task RunAsync()
         {
-            EnumWindows(OnEnumWindows, IntPtr.Zero);
+            //EnumWindows(OnEnumWindows, IntPtr.Zero);
+
+            await Task.Delay(5000);
+            keybd_event(25, 0, 0, 0);
+            keybd_event(25, 0, KEYEVENTF_KEYUP, 0);
+            SendKeys.SendWait("200");
         }
 
         [DllImport("user32.dll")]
@@ -83,6 +89,12 @@ namespace ROController
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
+
+        [DllImport("user32.dll")]
+        static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+        const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+        const uint KEYEVENTF_KEYUP = 0x0002;
     }
 
     [StructLayout(LayoutKind.Sequential)]
