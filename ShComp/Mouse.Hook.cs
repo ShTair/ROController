@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace ShComp
 {
@@ -9,10 +11,18 @@ namespace ShComp
         public static bool Hooked { get; set; }
         private static IntPtr _hHook;
 
+        public static event Action EventReceived;
+
         public static void Hook()
         {
-            var module = GetModuleHandle(Process.GetCurrentProcess().MainModule.ModuleName);
-            _hHook = SetWindowsHookEx(HookType.WH_MOUSE_LL, OnHookProc, module, IntPtr.Zero);
+            var module = LoadLibrary("user32.dll");
+
+            _hHook = SetWindowsHookEx(HookType.WH_MOUSE_LL, OnHookProc, IntPtr.Zero, IntPtr.Zero);
+            Hooked = true;
+            Console.WriteLine(_hHook);
+            var hr = Marshal.GetLastWin32Error();
+            Console.WriteLine(hr);
+            Application.Run();
         }
 
         public static void Unhook()
@@ -21,6 +31,7 @@ namespace ShComp
             {
                 UnhookWindowsHookEx(_hHook);
                 Hooked = false;
+                Application.Exit();
             }
         }
 
@@ -28,7 +39,8 @@ namespace ShComp
         {
             try
             {
-                Console.WriteLine();
+                Console.WriteLine("recv");
+                EventReceived?.Invoke();
             }
             catch { }
 
@@ -43,6 +55,9 @@ namespace ShComp
 
         [DllImport("user32.dll")]
         private static extern bool UnhookWindowsHookEx(IntPtr hHook);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetCurrentThreadId();
 
         private const int HC_ACTION = 0;
         private delegate IntPtr HOOKPROC(int nCode, IntPtr wParam, IntPtr lParam);
@@ -69,5 +84,8 @@ namespace ShComp
 
         [DllImport("user32.dll")]
         private static extern IntPtr CallNextHookEx(IntPtr hHook, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern IntPtr LoadLibrary(string lpFileName);
     }
 }

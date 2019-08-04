@@ -1,6 +1,7 @@
 ﻿using ShComp;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -37,10 +38,31 @@ namespace ROController
         {
             //EnumWindows(OnEnumWindows, IntPtr.Zero);
 
-            await Task.Delay(5000);
-            keybd_event(25, 0, 0, 0);
-            keybd_event(25, 0, KEYEVENTF_KEYUP, 0);
-            SendKeys.SendWait("200");
+            var count = (int.Parse(Console.ReadLine()) - 1) / 7 + 1;
+
+            var point = await GetPojnt();
+
+            //await Task.Delay(5000);
+            //keybd_event(25, 0, 0, 0);
+            //keybd_event(25, 0, KEYEVENTF_KEYUP, 0);
+            //SendKeys.SendWait("200");
+        }
+
+        private static TaskCompletionSource<Point> _tcs;
+
+        private static Task<Point> GetPojnt()
+        {
+            var tcs = new TaskCompletionSource<Point>();
+
+            Mouse.EventReceived += () =>
+            {
+                tcs.TrySetResult(new Point());
+                Mouse.Unhook();
+            };
+
+            Mouse.Hook();
+
+            return tcs.Task;
         }
 
         [DllImport("user32.dll")]
