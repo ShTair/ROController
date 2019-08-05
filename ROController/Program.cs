@@ -1,12 +1,9 @@
 ﻿using ShComp;
 using System;
-using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,49 +11,66 @@ namespace ROController
 {
     class Program
     {
-        private static MouseHooker _hooker;
-
         static void Main(string[] args)
         {
-            ConsoleController.OnEventGenerated += ConsoleController_OnEventGenerated;
             Task.Run(RunAsync).Wait();
-
-
-            Console.ReadLine();
-
-            _hooker?.Dispose();
-        }
-
-        private static bool ConsoleController_OnEventGenerated(ConsoleController.CtrlTypes ctrlType)
-        {
-            Console.WriteLine(ctrlType);
-
-            _hooker?.Dispose();
-
-            Task.Delay(1000).Wait();
-            return false;
         }
 
         private static async Task RunAsync()
         {
-            //EnumWindows(OnEnumWindows, IntPtr.Zero);
+            Console.WriteLine("取引所のウィンドウを表示してください。");
 
-            var count = (int.Parse(Console.ReadLine()) - 1) / 7 + 1;
+            Console.WriteLine("アイテムの個数を入力してください。");
+            var count = int.Parse(Console.ReadLine());
+            Console.WriteLine($"{count}個を7回に分けて出品します。");
 
-            var point = await GetPoint();
+            Console.WriteLine($"アイテムの座標をクリックしてください。");
+            var point = await GetPointAsync();
+            var rect = await GetWindowRectAsync(point, new CancellationTokenSource(1000).Token);
+            var row = new ROWindow(rect);
+            Console.WriteLine($"(X:{rect.X}, Y:{rect.Y}, W:{rect.Width}, H:{rect.Height})にゲームウィンドウが見つかりました。");
+            await Task.Delay(1000);
 
-            //await Task.Delay(5000);
-            //keybd_event(25, 0, 0, 0);
-            //keybd_event(25, 0, KEYEVENTF_KEYUP, 0);
-            //SendKeys.SendWait("200");
+            for (int i = 0; i < 7; i++)
+            {
+                var c = (count - 1) / (7 - i) + 1;
+                count -= c;
+                Console.WriteLine($"{i + 1}回目の出品です。{c}個出品して、残り{count}個です。");
+
+                row.GetSellCountBox().Click();
+                await Task.Delay(300);
+
+                PressKey(0x2e);
+                PressKey(25);
+                SendKeys.SendWait(c.ToString());
+                await Task.Delay(300);
+
+                row.GetTextBoxOk().Click();
+                await Task.Delay(300);
+
+                row.GetSellButton().Click();
+                await Task.Delay(1000);
+
+                if (i != 6)
+                {
+                    point.Click();
+                    await Task.Delay(300);
+                }
+            }
         }
 
-        private static Task<Point> GetPoint()
+        private static void PressKey(byte code)
+        {
+            keybd_event(code, 0, 0, 0);
+            keybd_event(code, 0, KEYEVENTF_KEYUP, 0);
+        }
+
+        private static Task<Point> GetPointAsync()
         {
             var tcs = new TaskCompletionSource<Point>();
-            _hooker = new MouseHooker();
+            var hooker = new MouseHooker();
 
-            _hooker.EventReceived += (status, point) =>
+            hooker.EventReceived += (status, point) =>
             {
                 if (status == 514)
                 {
@@ -67,11 +81,39 @@ namespace ROController
 
             Task.Run(() =>
             {
-                _hooker.Start();
+                hooker.Start();
                 Application.Run();
-                _hooker.Stop();
+                hooker.Stop();
                 Console.WriteLine("unhooked");
             });
+
+            return tcs.Task;
+        }
+
+        private static Task<Rectangle> GetWindowRectAsync(Point point, CancellationToken cancellationToken)
+        {
+            var tcs = new TaskCompletionSource<Rectangle>();
+            cancellationToken.Register(() => tcs.TrySetCanceled());
+
+            EnumWindows((IntPtr hWnd, IntPtr lParam) =>
+            {
+                var csb = new StringBuilder(256);
+                GetClassName(hWnd, csb, csb.Capacity);
+
+                var cs = csb.ToString();
+                if (cs.IndexOf("BlueStacks.exe") == -1) return true;
+
+                RECT rect;
+                GetWindowRect(hWnd, out rect);
+
+                if (rect.Left <= point.X && rect.Right >= point.X && rect.Top <= point.Y && rect.Bottom >= point.Y)
+                {
+                    tcs.TrySetResult(new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top));
+                    return false;
+                }
+
+                return true;
+            }, IntPtr.Zero);
 
             return tcs.Task;
         }
@@ -81,35 +123,6 @@ namespace ROController
         static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        private static bool OnEnumWindows(IntPtr hWnd, IntPtr lParam)
-        {
-            //ウィンドウのクラス名を取得する
-            StringBuilder csb = new StringBuilder(256);
-            GetClassName(hWnd, csb, csb.Capacity);
-
-            var cs = csb.ToString();
-            if (cs.IndexOf("BlueStacks.exe") == -1) return true;
-
-            //ウィンドウのタイトルを取得する
-            int textLen = GetWindowTextLength(hWnd);
-            StringBuilder tsb = new StringBuilder(textLen + 1);
-            GetWindowText(hWnd, tsb, tsb.Capacity);
-
-            //結果を表示する
-            Console.WriteLine("クラス名:" + csb.ToString());
-            Console.WriteLine("タイトル:" + tsb.ToString());
-
-            RECT rect;
-            GetWindowRect(hWnd, out rect);
-
-            Console.WriteLine(rect);
-
-            Console.WriteLine();
-
-            //すべてのウィンドウを列挙する
-            return true;
-        }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
@@ -134,42 +147,5 @@ namespace ROController
     public struct RECT
     {
         public int Left, Top, Right, Bottom;
-
-        public RECT(int left, int top, int right, int bottom)
-        {
-            Left = left;
-            Top = top;
-            Right = right;
-            Bottom = bottom;
-        }
-
-        public int X
-        {
-            get { return Left; }
-            set { Right -= (Left - value); Left = value; }
-        }
-
-        public int Y
-        {
-            get { return Top; }
-            set { Bottom -= (Top - value); Top = value; }
-        }
-
-        public int Height
-        {
-            get { return Bottom - Top; }
-            set { Bottom = value + Top; }
-        }
-
-        public int Width
-        {
-            get { return Right - Left; }
-            set { Right = value + Left; }
-        }
-
-        public override string ToString()
-        {
-            return string.Format(System.Globalization.CultureInfo.CurrentCulture, "{{X={0},Y={1},W={2},H={3}}}", Left, Top, Right - Left, Bottom - Top);
-        }
     }
 }

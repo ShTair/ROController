@@ -1,29 +1,26 @@
 ﻿using ShComp;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ROController
 {
     class ROWindow
     {
-        public int X { get; }
+        public Rectangle Rectangle { get; }
 
-        public int Y { get; }
-
-        public int Width { get; }
-
-        public int Height { get; }
-
-        public ROWindow(int left, int top, int right, int bottom)
+        public ROWindow(Rectangle rectangle)
         {
-            X = left;
-            Y = top;
-            Width = right - left;
-            Height = bottom - top;
+            Rectangle = rectangle;
+        }
+
+        public Point GetSellCountBox() => GetGamePoint(0.385, 0.48);
+
+        public Point GetTextBoxOk() => GetGamePoint(0.925, 0.9);
+
+        public Point GetSellButton() => GetGamePoint(0.415, 0.83);
+
+        private Point GetGamePoint(double px, double py)
+        {
+            return new Point((int)(Rectangle.X + Rectangle.Width * px), (int)(Rectangle.Y + Rectangle.Height * py));
         }
     }
 
