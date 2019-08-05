@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,24 +14,26 @@ namespace ROController
 {
     class Program
     {
+        private static MouseHooker _hooker;
+
         static void Main(string[] args)
         {
+            ConsoleController.OnEventGenerated += ConsoleController_OnEventGenerated;
             Task.Run(RunAsync).Wait();
 
-            ConsoleController.OnEventGenerated += ConsoleController_OnEventGenerated;
 
             Console.ReadLine();
 
-            Mouse.Unhook();
+            _hooker?.Dispose();
         }
 
         private static bool ConsoleController_OnEventGenerated(ConsoleController.CtrlTypes ctrlType)
         {
             Console.WriteLine(ctrlType);
 
-            Mouse.Unhook();
+            _hooker?.Dispose();
 
-            Task.Delay(100).Wait();
+            Task.Delay(1000).Wait();
             return false;
         }
 
@@ -40,7 +43,7 @@ namespace ROController
 
             var count = (int.Parse(Console.ReadLine()) - 1) / 7 + 1;
 
-            var point = await GetPojnt();
+            var point = await GetPoint();
 
             //await Task.Delay(5000);
             //keybd_event(25, 0, 0, 0);
@@ -50,17 +53,22 @@ namespace ROController
 
         private static TaskCompletionSource<Point> _tcs;
 
-        private static Task<Point> GetPojnt()
+        private static Task<Point> GetPoint()
         {
             var tcs = new TaskCompletionSource<Point>();
+            _hooker = new MouseHooker();
 
-            Mouse.EventReceived += () =>
+            _hooker.EventReceived += () =>
             {
                 tcs.TrySetResult(new Point());
-                Mouse.Unhook();
+                //Mouse.Unhook();
             };
 
-            Mouse.Hook();
+            Task.Run(() =>
+            {
+                _hooker.Start();
+                Application.Run();
+            });
 
             return tcs.Task;
         }
