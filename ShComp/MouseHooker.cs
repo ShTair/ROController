@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace ShComp
@@ -7,25 +8,27 @@ namespace ShComp
     {
         public bool Hooking { get; private set; }
 
-        public event Action EventReceived;
+        public event Action<int, Point> EventReceived;
 
         private IntPtr _hHook;
 
         public void Start()
         {
-            var module = LoadLibrary("user32.dll");
             _hHook = SetWindowsHookEx(HookType.WH_MOUSE_LL, OnHookProc, IntPtr.Zero, IntPtr.Zero);
             Hooking = true;
         }
 
-        private IntPtr OnHookProc(int nCode, IntPtr wParam, IntPtr lParam)
+        private IntPtr OnHookProc(int nCode, int wParam, IntPtr lParam)
         {
-            try
+            if (nCode >= 0)
             {
-                Console.WriteLine($"{nCode} {wParam} {lParam}");
-                EventReceived?.Invoke();
+                try
+                {
+                    var mhs = Marshal.PtrToStructure<MouseHookStruct>(lParam);
+                    EventReceived?.Invoke(wParam, new Point(mhs.pt.x, mhs.pt.y));
+                }
+                catch { }
             }
-            catch { }
 
             return CallNextHookEx(_hHook, nCode, wParam, lParam);
         }
@@ -46,9 +49,6 @@ namespace ShComp
 
         #region Api
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
         [DllImport("user32.dll")]
         private static extern IntPtr SetWindowsHookEx(HookType idHook, HOOKPROC lpfn, IntPtr hMod, IntPtr dwThreadId);
 
@@ -56,13 +56,30 @@ namespace ShComp
         private static extern bool UnhookWindowsHookEx(IntPtr hHook);
 
         [DllImport("user32.dll")]
-        private static extern IntPtr CallNextHookEx(IntPtr hHook, int nCode, IntPtr wParam, IntPtr lParam);
+        private static extern IntPtr CallNextHookEx(IntPtr hHook, int nCode, int wParam, IntPtr lParam);
 
-        private delegate IntPtr HOOKPROC(int nCode, IntPtr wParam, IntPtr lParam);
+        private delegate IntPtr HOOKPROC(int nCode, int wParam, IntPtr lParam);
 
         private enum HookType : int
         {
             WH_MOUSE_LL = 14,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int x;
+            public int y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class MouseHookStruct
+        {
+            public POINT pt;
+            public uint mouseData;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
         }
 
         #endregion

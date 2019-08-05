@@ -51,23 +51,26 @@ namespace ROController
             //SendKeys.SendWait("200");
         }
 
-        private static TaskCompletionSource<Point> _tcs;
-
         private static Task<Point> GetPoint()
         {
             var tcs = new TaskCompletionSource<Point>();
             _hooker = new MouseHooker();
 
-            _hooker.EventReceived += () =>
+            _hooker.EventReceived += (status, point) =>
             {
-                tcs.TrySetResult(new Point());
-                //Mouse.Unhook();
+                if (status == 514)
+                {
+                    tcs.TrySetResult(point);
+                    Application.Exit();
+                }
             };
 
             Task.Run(() =>
             {
                 _hooker.Start();
                 Application.Run();
+                _hooker.Stop();
+                Console.WriteLine("unhooked");
             });
 
             return tcs.Task;
