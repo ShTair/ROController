@@ -42,6 +42,8 @@ namespace ROController
 
                 PressKey(0x2e);
                 PressKey(25);
+                await Task.Delay(300);
+
                 SendKeys.SendWait(c.ToString());
                 await Task.Delay(300);
 
